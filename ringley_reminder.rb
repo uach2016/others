@@ -15,6 +15,7 @@ class Reminder < Charge
   end
 
   def on date, estates
+  @date = date
   @reminders = Array.new
   
     estates.each do |estate|
@@ -27,27 +28,27 @@ class Reminder < Charge
         end
       end
     end
-    count_reminders
+    frame
+  end
+
+  def get_upcoming_date date, num_month
+    upcoming_date = date << num_month
   end
   
   def upcoming charge, date
     due_dates = Array.new
     
     @rules.each do |rule|
-      if (rule[:period] == charge[:period]) && (rule[:time] == charge[:due_date])
+      if (rule[:period] == charge[:period])
+        upcoming_dates = get_upcoming_date charge[:due_date], rule[:time]
+        if upcoming_dates == date
         due_dates << charge[:due_date]
+        end
       end
     end
     due_dates
   end
   
-  def count_reminders
-    if @reminders.length > 0 
-      frame
-    else
-      puts 'No reminders yet'
-    end
-  end
   def frame
     puts "+---------------+---------------------------------------+"
     puts "|Date           |Reminders                              |"           
@@ -55,39 +56,49 @@ class Reminder < Charge
     show
   end
   def show 
-    @reminders.each do |reminder|
-        puts "|#{Date.today}""     |#{reminder[:estate] }  due date: #{reminder[:due_date]}            |" 
-        puts "+---------------+---------------------------------------+"
+    if @reminders.length > 0 
+      @reminders.each do |reminder|
+          if reminder == @reminders[0]
+          puts "|#{@date}     |#{reminder[:estate] }  due date: #{reminder[:due_date]}            |" 
+          else 
+            puts "|               |#{reminder[:estate] }  due date: #{reminder[:due_date]}            |" 
+          end
+       end
+    else
+      puts "|#{@date}     |(no reminders)                         |" 
     end
+        puts "+---------------+---------------------------------------+"
   end
 end
   
 charge1 = {
           :estate_code => "0066S", 
           :period => "Quarterly",
-          :due_date => Date.new(2017, 1, 17)
+          :due_date => Date.strptime('01/02/2013', '%d/%m/%Y')
         }
 charge2 = {
           :estate_code => "0123S", 
           :period => "Twice a year",
-          :due_date => Date.new(2017, 2, 17)
+          :due_date => Date.strptime('01/03/2013', '%d/%m/%Y')
         }
 charge3 = {
           :estate_code => "0250S", 
           :period => "Quarterly",
-          :due_date => Date.new(2017, 1, 17)
+          :due_date => Date.strptime('01/02/2013', '%d/%m/%Y')
         }
 
 charge = Charge.new
 charge.add_charge charge1
 charge.add_charge charge2
 charge.add_charge charge3
-date = Date.today
+
+
+date = Date.strptime('01/01/2013', '%d/%m/%Y')
 estates = ['0066S', '0123S', '0250S']
 rules =
     [
-      { :period => 'Quarterly',    :time => date.next_month },
-      { :period => 'Twice a year', :time =>  date.next_month.next_month}
+      { :period => 'Quarterly',    :time => 1 },
+      { :period => 'Twice a year', :time =>  2}
     ]
     
 reminder = Reminder.new(rules)
