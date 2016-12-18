@@ -21,70 +21,95 @@ class Reminder < Charge
     estates.each do |estate|
       @@charges.each do |charge|
         if charge[:estate_code] == estate
-          upcoming_dates = upcoming charge, date
-            if  upcoming_dates.length > 0
-              @reminders << {:estate => estate, :due_date => charge[:due_date]}
-            end
+          upcoming_dates = upcoming charge
+          if upcoming_dates.any?
+            @reminders << {:estate => estate, :due_dates => upcoming_dates}
+          end
         end
       end
     end
-    frame
+  @reminders
+  frame
+  show @reminders
   end
 
-  def get_upcoming_date date, num_month
-    upcoming_date = date << num_month
+ def get_upcoming_date due_dates, rule_time
+   dates = Array.new
+   due_dates.each do |due_date|
+    if due_date << rule_time == @date
+    dates.push(due_date)
+    end
+   end
+   dates
   end
   
-  def upcoming charge, date
+  def upcoming charge
     due_dates = Array.new
-    
+  
     @rules.each do |rule|
       if (rule[:period] == charge[:period])
-        upcoming_dates = get_upcoming_date charge[:due_date], rule[:time]
-        if upcoming_dates == date
-        due_dates << charge[:due_date]
-        end
+      upcoming_dates = get_upcoming_date charge[:due_dates], rule[:time]
+      if upcoming_dates.any?
+       due_dates << upcoming_dates
+     end
       end
     end
     due_dates
   end
-  
+
   def frame
     puts "+---------------+---------------------------------------+"
     puts "|Date           |Reminders                              |"           
     puts "+---------------+---------------------------------------+"
-    show
   end
-  def show 
-    if @reminders.length > 0 
-      @reminders.each do |reminder|
-          if reminder == @reminders[0]
-          puts "|#{@date}     |#{reminder[:estate] }  due date: #{reminder[:due_date]}            |" 
-          else 
-            puts "|               |#{reminder[:estate] }  due date: #{reminder[:due_date]}            |" 
+   def show reminders
+    if reminders.length > 0 
+      reminders.each do |reminder|
+        if reminder == @reminders[0]
+           reminder[:due_dates].each do |due_date|
+             if due_date.any?
+                print "|#{@date}     |#{reminder[:estate] } due date "
+                due_date.each {|due_date| print due_date.strftime('%d %b %Y')}
+                puts "             |"
+              end
+           end
+        else
+          reminder[:due_dates].each do |due_date|
+            if due_date.any?
+              print "|               |#{reminder[:estate] } due date "
+              due_date.each {|due_date| print due_date.strftime('%d %b %Y')}
+              print "             |"
+              print "\n"
+            end
           end
-       end
-    else
-      puts "|#{@date}     |(no reminders)                         |" 
+        end
+      end
+    else 
+      puts "|#{@date}     |(no reminders)                         |"
     end
-        puts "+---------------+---------------------------------------+"
+    finish_frame
+  end
+  def finish_frame
+    puts "+-------------------------------------------------------+"
   end
 end
+  
+
   
 charge1 = {
           :estate_code => "0066S", 
           :period => "Quarterly",
-          :due_date => Date.strptime('01/02/2013', '%d/%m/%Y')
+          :due_dates => [Date.strptime('02/02/2013', '%d/%m/%Y')]
         }
 charge2 = {
           :estate_code => "0123S", 
           :period => "Twice a year",
-          :due_date => Date.strptime('01/03/2013', '%d/%m/%Y')
+          :due_dates => [Date.strptime('02/03/2013', '%d/%m/%Y')]
         }
 charge3 = {
           :estate_code => "0250S", 
           :period => "Quarterly",
-          :due_date => Date.strptime('01/02/2013', '%d/%m/%Y')
+          :due_dates => [Date.strptime('02/02/2013', '%d/%m/%Y')]
         }
 
 charge = Charge.new
@@ -98,7 +123,7 @@ estates = ['0066S', '0123S', '0250S']
 rules =
     [
       { :period => 'Quarterly',    :time => 1 },
-      { :period => 'Twice a year', :time =>  2}
+      { :period => 'Twice a year', :time => 2 }
     ]
     
 reminder = Reminder.new(rules)
